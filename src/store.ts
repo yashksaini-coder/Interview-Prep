@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { paths } from "./config.js";
 import { parseSlug } from "./ingest/clone.js";
@@ -25,6 +25,18 @@ export function saveSession(session: Session): string {
   const file = join(paths.sessions, `${session.startedAt.replace(/[:.]/g, "-")}.json`);
   writeFileSync(file, JSON.stringify(session, null, 2));
   return file;
+}
+
+export function countSessions(dir = paths.sessions): number {
+  if (!existsSync(dir)) return 0;
+  return readdirSync(dir).filter((name) => name.endsWith(".json")).length;
+}
+
+/** Delete every saved session. Spots and clones stay. Returns how many were removed. */
+export function clearSessions(dir = paths.sessions): number {
+  const count = countSessions(dir);
+  rmSync(dir, { recursive: true, force: true });
+  return count;
 }
 
 export function loadRounds(): Round[] {

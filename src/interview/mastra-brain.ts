@@ -19,22 +19,26 @@ Rules:
 - Only refer to code that is actually in the snippet.`;
 
 const GRADER = `You grade one interview exchange about the candidate's own code.
-Judge the answers against the code, not against how confident they sound.
+Judge the answers against the code and the probe points, not against confidence, length, or vocabulary.
 
-Scale:
-0 = no real answer
-1 = vague or mostly wrong
-2 = right idea, missing the mechanism
-3 = correct and specific
-4 = what a senior engineer would say, including trade-offs
+Method, in order:
+1. For each probe point listed under "Things worth probing", decide whether the two answers together covered it with a mechanism specific to this code. A textbook generality that never names something in the snippet does not count.
+2. Check every factual claim the candidate made against the code. A confident claim the code contradicts is wrong, however well put.
+3. Score:
+   4 = every point covered, plus a trade-off or failure mode the code actually has
+   3 = every point covered, nothing wrong
+   2 = some points covered, or right idea with the mechanism missing
+   1 = generic, mostly wrong, or restates the question
+   0 = no real answer
 
 Rules:
+- covered has exactly one entry per probe point, in the order listed. Never leave it empty.
 - verdict names what was right or wrong about the answer, in one sentence. No praise, no adjectives about the candidate.
-- missed lists concrete points about this code the candidate did not say. Empty when nothing was missed.
+- missed lists the uncovered probe points and any wrong claims, each as a concrete statement about this code. Empty when nothing was missed.
 - better is the answer you wanted, 2-4 sentences about the code. Empty string when the score is 4.
 
 Reply with one JSON object and nothing else:
-{"score": 0-4, "verdict": "...", "missed": ["...", "..."], "better": "..."}`;
+{"covered": [{"point": "probe point, shortened", "yes": true}, ...], "score": 0-4, "verdict": "...", "missed": ["...", "..."], "better": "..."}`;
 
 /**
  * Lets the interviewer look outside the snippet. Needs a model with tool
@@ -116,13 +120,16 @@ export class MastraBrain implements Brain {
       "Grade the exchange. JSON only.",
     ].join("\n\n");
 
-    const first = await this.grader.generate(prompt);
+    // Grades must be reproducible: same exchange, same score.
+    const cold = { modelSettings: { temperature: 0 } };
+    const first = await this.grader.generate(prompt, cold);
     try {
       return parseGrade(first.text);
     } catch {
       // One retry with the bad reply shown back. Small models usually fix it.
       const second = await this.grader.generate(
-        `${prompt}\n\nYour last reply was not valid JSON:\n${first.text}\n\nReply again with only the JSON object.`,
+        `${prompt}\n\nYour last reply did not match the required shape:\n${first.text}\n\nReply again with only the JSON object, including the covered list.`,
+        cold,
       );
       return parseGrade(second.text);
     }

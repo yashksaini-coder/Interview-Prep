@@ -31,7 +31,7 @@ const scriptedIo = (answers: string[]): Io & { out: string[] } => {
 test("a full round through Mastra: question, follow-up, grade", async () => {
   const model = await fakeModel((messages) => {
     const text = textOf(messages);
-    if (text.includes("Grade the exchange")) return '{"score":2,"verdict":"Right idea.","missed":["guard held across await"],"better":"Drop the guard first."}';
+    if (text.includes("Grade the exchange")) return '{"covered":[{"point":"guard","yes":true}],"score":2,"verdict":"Right idea.","missed":["guard held across await"],"better":"Drop the guard first."}';
     if (text.includes("Ask one follow-up")) return "Follow-up: What if flush() takes a second?";
     return '"Why is `guard` still alive at flush().await?"';
   });
@@ -65,14 +65,16 @@ test("a grade that is not JSON is retried once", async () => {
   let grades = 0;
   const model = await fakeModel((messages) => {
     if (!textOf(messages).includes("Grade the exchange")) return "A question?";
-    return ++grades === 1 ? "I'd give this a 3 out of 4." : '```json\n{"score": 3, "verdict": "Good."}\n```';
+    return ++grades === 1 ? "I'd give this a 3 out of 4." : '```json\n{"covered":[{"point":"a","yes":true}], "score": 3, "verdict": "Good."}\n```';
   });
   try {
     const brain = new MastraBrain({ modelId: "m", url: model.url });
     const grade = await brain.grade(spot, { question: "q", answer: "a", followUp: "f", followUpAnswer: "b" });
     assert.equal(grade.score, 3);
     assert.equal(grades, 2);
-    assert.ok(textOf(model.requests[1]!.messages).includes("was not valid JSON"));
+    assert.ok(textOf(model.requests[1]!.messages).includes("did not match the required shape"));
+    // The grader runs cold so the same exchange gets the same score.
+    for (const request of model.requests) assert.equal((request as { temperature?: number }).temperature, 0);
   } finally {
     await model.close();
   }
@@ -114,4 +116,22 @@ test("with tools on, the interviewer can read beyond the snippet, but not beyond
 
   const outside = await ask("../../etc/passwd")();
   assert.ok(textOf(outside.sent[1]!.messages).includes("outside the repository"));
+});
+
+test("every graded round is saved before the next one starts", async () => {
+  let grades = 0;
+  const model = await fakeModel((messages) => {
+    if (!textOf(messages).includes("Grade the exchange")) return "A question?";
+    return ++grades === 1 ? '{"covered":[{"point":"a","yes":true}],"score":3,"verdict":"ok"}' : "not json at all";
+  });
+  try {
+    const brain = new MastraBrain({ modelId: "m", url: model.url });
+    const saved: number[] = [];
+    await assert.rejects(
+      runSession([spot, { ...spot, id: "def" }], brain, scriptedIo(["a", "b", "c", "d"]), (s) => saved.push(s.rounds.length)),
+    );
+    assert.deepEqual(saved, [1]);
+  } finally {
+    await model.close();
+  }
 });

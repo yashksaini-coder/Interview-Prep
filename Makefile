@@ -12,7 +12,7 @@ GRILL  = GRILL_MODEL=$(MODEL) node dist/cli.js
 SRC    = $(shell find src -name "*.ts")
 FLAGS  = -n $(N) $(if $(ONLY),--lang $(ONLY)) $(if $(TOOLS),--tools)
 
-.PHONY: help setup model build test typecheck check ingest start report spots forget demo clean
+.PHONY: help setup model build test typecheck check ingest start report spots reset forget demo clean
 
 help: ## show this help
 	@grep -E '^[a-z]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{ printf "  make %-10s %s\n", $$1, $$2 }'
@@ -49,6 +49,9 @@ report: dist/cli.js ## show the weak-spot map
 
 spots: dist/cli.js ## list everything found
 	@$(GRILL) spots
+
+reset: dist/cli.js ## clear every score, keep the spots
+	@$(GRILL) reset --yes
 
 forget: dist/cli.js ## drop repositories: make forget REPOS="owner/repo"
 	@$(GRILL) forget $(REPOS)

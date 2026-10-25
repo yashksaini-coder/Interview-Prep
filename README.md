@@ -65,6 +65,7 @@ grill start -n 3 --lang rust
 grill report               # the weak-spot map
 grill spots                # everything it found
 grill forget owner/repo    # drop a repository and its clone
+grill reset --yes          # clear every score, keep the spots
 ```
 
 `grill ingest` also takes a git URL or a local path, so private code works without leaving the machine.

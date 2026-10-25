@@ -17,6 +17,10 @@ export interface Exchange {
 }
 
 export const gradeSchema = z.object({
+  /** One entry per probe point: did the candidate cover it, specifically to this code? */
+  covered: z
+    .array(z.object({ point: z.string(), yes: z.preprocess((v) => v === true || /^(true|yes|1)$/i.test(String(v)), z.boolean()) }))
+    .default([]),
   score: z.coerce.number().min(0).max(4),
   verdict: z.string().min(1),
   missed: z.array(z.string()).default([]),
@@ -48,11 +52,21 @@ export function extractJson(text: string): unknown {
   throw new Error("unbalanced JSON object in reply");
 }
 
+/**
+ * The model ticks the probe points; the code turns ticks into a ceiling, so a
+ * generous grader cannot hand out a 4 for an answer that skipped a point.
+ * Same ladder as the prompt: none covered caps at 1, some at 2, all at 4.
+ * A model that skips the checklist cannot certify a 4, so no list caps at 3.
+ * Points the model left unticked are added to `missed` so the cap is explained.
+ */
 export function parseGrade(text: string): Grade {
-  const parsed = gradeSchema.parse(extractJson(text));
-  const score = Math.round(parsed.score);
+  const { covered, ...parsed } = gradeSchema.parse(extractJson(text));
+  const skipped = covered.filter((c) => !c.yes).map((c) => c.point);
+  const cap = covered.length === 0 ? 3 : skipped.length === 0 ? 4 : skipped.length === covered.length ? 1 : 2;
+  const score = Math.min(Math.round(parsed.score), cap);
+  const missed = [...parsed.missed, ...skipped.filter((p) => !parsed.missed.some((m) => m.includes(p)))];
   // 4 means nothing was missing, so there is no better answer to show.
-  return { ...parsed, score, better: score === 4 ? "" : parsed.better };
+  return { ...parsed, score, missed, better: score === 4 ? "" : parsed.better };
 }
 
 /** Models like to open with "Sure!" or wrap the question in quotes. */

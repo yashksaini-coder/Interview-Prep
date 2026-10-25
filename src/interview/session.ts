@@ -7,7 +7,13 @@ import type { Brain } from "./brain.js";
  * One interview: for each spot, ask, listen, press once, then grade.
  * The order is fixed in code so a small model only ever has one job at a time.
  */
-export async function runSession(spots: Hotspot[], brain: Brain, io: Io): Promise<Session> {
+export async function runSession(
+  spots: Hotspot[],
+  brain: Brain,
+  io: Io,
+  /** Called after every graded round, so a crash later cannot lose earlier ones. */
+  save: (session: Session) => void = () => {},
+): Promise<Session> {
   const session: Session = { startedAt: new Date().toISOString(), model: brain.name, rounds: [] };
 
   for (const [index, spot] of spots.entries()) {
@@ -42,6 +48,7 @@ export async function runSession(spots: Hotspot[], brain: Brain, io: Io): Promis
       at: new Date().toISOString(),
     };
     session.rounds.push(round);
+    save(session);
   }
   return session;
 }

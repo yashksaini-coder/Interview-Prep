@@ -10,6 +10,8 @@ import { pick } from "./interview/pick.js";
 import { runSession } from "./interview/session.js";
 import { renderReport } from "./report.js";
 import {
+  clearSessions,
+  countSessions,
   dropRepo,
   loadHotspots,
   loadRounds,
@@ -26,6 +28,7 @@ const HELP = `grill: a local mock interviewer that has read your code
   grill forget <repo> ...                          drop a repository and its clone
   grill start [-n 5] [--lang rust|js] [--tools]    run an interview
   grill report                                     show the weak-spot map
+  grill reset --yes                                clear every score and start the map over
   grill spots                                      list what was found
 
 Model: ${model.modelId} at ${model.url}
@@ -42,6 +45,8 @@ async function main(): Promise<void> {
       return start(rest);
     case "report":
       return console.log(renderReport(topicStats(loadRounds())));
+    case "reset":
+      return reset(rest);
     case "spots":
       return spots();
     default:
@@ -87,6 +92,17 @@ function forget(args: string[]): void {
   saveHotspots(kept);
 }
 
+/** Deleting scores is the one thing grill cannot undo, so it asks for --yes. */
+function reset(args: string[]): void {
+  const count = countSessions();
+  if (count === 0) return console.log("No sessions to clear.");
+  if (!args.includes("--yes")) {
+    throw new Error(`This deletes ${count} session${count === 1 ? "" : "s"} and every score. Run \`grill reset --yes\` to confirm.`);
+  }
+  const cleared = clearSessions();
+  console.log(`${cleared} session${cleared === 1 ? "" : "s"} cleared. Spots are kept.`);
+}
+
 async function start(args: string[]): Promise<void> {
   const { values } = parseArgs({
     args,
@@ -122,9 +138,8 @@ async function start(args: string[]): Promise<void> {
   const brain = new MastraBrain(model, values.tools ? { roots } : {});
   const io = terminal();
   try {
-    const session = await runSession(chosen, brain, io);
+    const session = await runSession(chosen, brain, io, saveSession);
     if (session.rounds.length === 0) return;
-    saveSession(session);
     console.log(`\n${renderReport(topicStats(loadRounds()))}`);
   } catch (error) {
     throw explain(error);

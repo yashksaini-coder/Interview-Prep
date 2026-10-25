@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
+import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 import { extractJson, parseGrade, tidy } from "../src/interview/brain.js";
 import { pick, priority } from "../src/interview/pick.js";
-import { dropRepo, topicStats } from "../src/store.js";
+import { clearSessions, dropRepo, topicStats } from "../src/store.js";
 import type { Hotspot, Round } from "../src/types.js";
 
 test("extractJson survives fences, prose, and braces inside strings", () => {
@@ -12,11 +15,16 @@ test("extractJson survives fences, prose, and braces inside strings", () => {
   assert.throws(() => extractJson('{"score": 2'));
 });
 
+const C = '"covered": [{"point": "a", "yes": true}]';
+
 test("parseGrade coerces and bounds the score", () => {
-  assert.deepEqual(parseGrade('{"score": "3", "verdict": "ok"}'), { score: 3, verdict: "ok", missed: [], better: "" });
-  assert.equal(parseGrade('{"score": 2.6, "verdict": "ok"}').score, 3);
-  assert.throws(() => parseGrade('{"score": 9, "verdict": "ok"}'));
-  assert.throws(() => parseGrade('{"score": 2}'));
+  assert.deepEqual(parseGrade(`{${C}, "score": "3", "verdict": "ok"}`), { score: 3, verdict: "ok", missed: [], better: "" });
+  assert.equal(parseGrade(`{${C}, "score": 2.6, "verdict": "ok"}`).score, 3);
+  assert.throws(() => parseGrade(`{${C}, "score": 9, "verdict": "ok"}`));
+  assert.throws(() => parseGrade(`{${C}, "score": 2}`));
+  // Without the checklist the model cannot certify a 4.
+  assert.equal(parseGrade('{"score": 4, "verdict": "ok"}').score, 3);
+  assert.equal(parseGrade('{"covered": [], "score": 4, "verdict": "ok"}').score, 3);
 });
 
 test("tidy strips labels and wrapping quotes", () => {
@@ -78,9 +86,9 @@ test("pick filters by language and never repeats within a session", () => {
 });
 
 test("a perfect score has no better answer to show", () => {
-  const perfect = parseGrade('{"score": 4, "verdict": "Senior level.", "better": "The candidate was excellent."}');
+  const perfect = parseGrade(`{${C}, "score": 4, "verdict": "Senior level.", "better": "The candidate was excellent."}`);
   assert.equal(perfect.better, "");
-  const partial = parseGrade('{"score": 3, "verdict": "Good.", "better": "Mention poisoning."}');
+  const partial = parseGrade(`{${C}, "score": 3, "verdict": "Good.", "better": "Mention poisoning."}`);
   assert.equal(partial.better, "Mention poisoning.");
 });
 
@@ -90,4 +98,26 @@ test("dropRepo removes one repository by slug, URL, or local name", () => {
   assert.deepEqual(dropRepo(all, "https://github.com/me/app.git").map((s) => s.id), ["1", "3"]);
   assert.deepEqual(dropRepo(all, "local-dir").map((s) => s.id), ["1", "2"]);
   assert.equal(dropRepo(all, "nobody/nothing").length, 3);
+});
+
+test("the score is capped by how many probe points were covered, and unticked points are reported", () => {
+  const none = '{"covered": [{"point": "a", "yes": false}, {"point": "b", "yes": "false"}], "score": 3, "verdict": "v"}';
+  const some = '{"covered": [{"point": "a", "yes": "true"}, {"point": "b", "yes": 0}], "score": 4, "verdict": "v", "better": "say b"}';
+  const all = '{"covered": [{"point": "a", "yes": true}, {"point": "b", "yes": 1}], "score": 4, "verdict": "v"}';
+  assert.equal(parseGrade(none).score, 1);
+  const capped = parseGrade(some);
+  assert.equal(capped.score, 2);
+  assert.deepEqual(capped.missed, ["b"]);
+  assert.equal(capped.better, "say b");
+  assert.equal(parseGrade(all).score, 4);
+  assert.ok(!("covered" in parseGrade(all)));
+});
+
+test("clearSessions removes every saved session and reports the count", () => {
+  const dir = mkdtempSync(join(tmpdir(), "grill-sessions-"));
+  writeFileSync(join(dir, "a.json"), "{}");
+  writeFileSync(join(dir, "b.json"), "{}");
+  assert.equal(clearSessions(dir), 2);
+  assert.equal(existsSync(dir), false);
+  assert.equal(clearSessions(dir), 0);
 });

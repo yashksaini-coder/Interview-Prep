@@ -55,6 +55,7 @@ make start N=3 ONLY=rust TOOLS=1             # flags as variables
 make start MODEL=qwen3:8b                    # another model for one run
 make report
 make forget REPOS="AkashJana18/miccli"
+make reset                                   # clear scores, keep spots (passes --yes)
 make demo                                    # re-render docs/demo.gif from the cast
 ```
 
@@ -186,6 +187,10 @@ shared-state  ████ 4.0  1 round
 
 Before any session it prints `No rounds yet. Run grill start first.`
 
+### `grill reset --yes`
+
+Clears every saved session, so the weak-spot map starts over. Spots and clones are kept. Without `--yes` it only tells you how many sessions it would delete; this is the one thing grill cannot undo, so it never runs on a bare `grill reset`.
+
 ### `grill forget <repo> ...`
 
 Drops a repository: its spots leave the store and its clone is deleted. Session history is kept. Name it as `grill spots` shows it, or paste the URL.
@@ -207,7 +212,7 @@ $GRILL_HOME/
   sessions/*.json        one file per interview, with every question, answer, and grade
 ```
 
-All plain JSON. Delete `sessions/` to reset your scores, delete the whole directory to start over. Nothing leaves the machine.
+All plain JSON. `grill reset --yes` deletes `sessions/`; delete the whole directory to start over. Nothing leaves the machine.
 
 ## Running the tests against a fake model
 
