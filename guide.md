@@ -15,15 +15,15 @@ Requirements:
 ollama pull gemma4
 
 # 2. grill itself
-git clone https://github.com/yashksaini-coder/grill && cd grill
-npm install
-npm run build
-npm link            # puts `grill` on your PATH; or run `node dist/cli.js` instead
+npm install -g grill-cli
 ```
 
-Or let make do it:
+Or run it without installing: `npx grill-cli`.
+
+From source, for hacking on it:
 
 ```sh
+git clone https://github.com/yashksaini-coder/grill && cd grill
 make setup          # ollama pull gemma4, npm install, build, npm link
 ```
 

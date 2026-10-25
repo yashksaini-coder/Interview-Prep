@@ -1,17 +1,49 @@
 {
-  "name": "grill",
+  "name": "grill-cli",
   "version": "0.1.0",
-  "description": "A local mock interviewer that has read your code. Rust and JavaScript, fully offline.",
+  "description": "A mock interviewer that has read your code. Rust and TypeScript, local model, no network.",
+  "keywords": [
+    "interview",
+    "mock-interview",
+    "rust",
+    "typescript",
+    "ollama",
+    "local-llm",
+    "cli",
+    "mastra"
+  ],
+  "homepage": "https://github.com/yashksaini-coder/grill#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yashksaini-coder/grill.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yashksaini-coder/grill/issues"
+  },
+  "author": "Yash Kumar Saini (https://github.com/yashksaini-coder)",
+  "license": "MIT",
   "type": "module",
-  "bin": { "grill": "dist/cli.js" },
+  "bin": {
+    "grill": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json && chmod +x dist/cli.js",
     "dev": "tsx src/cli.ts",
     "test": "tsx --test test/*.test.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
-  "engines": { "node": ">=22.13.0" },
-  "license": "MIT",
   "dependencies": {
     "@mastra/core": "^1.74.0",
     "picocolors": "^1.1.1",

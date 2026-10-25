@@ -55,9 +55,7 @@ Needs Node 22.13+ and [Ollama](https://ollama.com).
 
 ```sh
 ollama pull gemma4
-
-git clone https://github.com/yashksaini-coder/grill && cd grill
-npm install && npm run build && npm link
+npm install -g grill-cli
 
 grill ingest AkashJana18/miccli AkashJana18/solana-consensus-lab
 grill start                # 5 questions
@@ -68,7 +66,9 @@ grill forget owner/repo    # drop a repository and its clone
 grill reset --yes          # clear every score, keep the spots
 ```
 
-`grill ingest` also takes a git URL or a local path, so private code works without leaving the machine.
+`grill ingest` also takes a git URL or a local path, so private code works without leaving the machine. To try it without installing, `npx grill-cli start`.
+
+From source instead: `git clone https://github.com/yashksaini-coder/grill && cd grill && npm install && npm run build && npm link`.
 
 There is a Makefile too: `make setup`, then `make ingest REPOS="owner/repo"` and `make start N=3 ONLY=rust`. `make help` lists the rest.
 
