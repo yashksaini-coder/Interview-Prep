@@ -1,10 +1,15 @@
 <p align="center">
-  <img src="docs/cover.png" alt="grill: a mock interviewer that has read your code" width="800">
+  <img src="https://raw.githubusercontent.com/yashksaini-coder/grill/main/docs/cover.png" alt="grill: a mock interviewer that has read your code" width="800">
 </p>
 
 # grill
 
+[![npm](https://img.shields.io/npm/v/grill-cli?logo=npm&color=cb3837)](https://www.npmjs.com/package/grill-cli)
+[![ci](https://github.com/yashksaini-coder/grill/actions/workflows/ci.yml/badge.svg)](https://github.com/yashksaini-coder/grill/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-MIT-blue)](https://github.com/yashksaini-coder/grill/blob/main/LICENSE)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/yashksaini-coder)
+
+Package `grill-cli` on npm, command `grill` once installed.
 
 A mock interviewer that has read your code. It runs on your laptop, on an open model, with no network.
 
@@ -13,7 +18,7 @@ Most interview prep asks textbook questions. Real senior interviews ask "walk me
 Built for [Akash](https://github.com/AkashJana18), who writes Rust and TypeScript and is interviewing for full-time roles.
 
 <p align="center">
-  <img src="docs/desk.jpg" alt="I built my friend an interviewer that read his code" width="800">
+  <img src="https://raw.githubusercontent.com/yashksaini-coder/grill/main/docs/desk.jpg" alt="I built my friend an interviewer that read his code" width="800">
 </p>
 
 ```
@@ -33,13 +38,13 @@ The code and location above are real scanner output. The question is an example 
 
 ## Demo
 
-![grill interviewing a real repository: ingest, spots, a two-round interview, the weak-spot map](docs/demo.gif)
+![grill interviewing a real repository: ingest, spots, a two-round interview, the weak-spot map](https://raw.githubusercontent.com/yashksaini-coder/grill/main/docs/demo.gif)
 
-Recorded against `gemma4` on a laptop, no network. The first answer is senior level and scores 4. The second is vague on purpose and scores 1, with what was missed. The full transcript is in [docs/DEMO.md](docs/DEMO.md), and `docs/demo.cast` plays back with `asciinema play`.
+Recorded against `gemma4` on a laptop, no network. The first answer is senior level and scores 4. The second is vague on purpose and scores 1, with what was missed. The full transcript is in [docs/DEMO.md](https://github.com/yashksaini-coder/grill/blob/main/docs/DEMO.md), and `docs/demo.cast` plays back with `asciinema play`.
 
 ## How it works
 
-![The three stages: ingest, interview, remember](docs/architecture.png)
+![The three stages: ingest, interview, remember](https://raw.githubusercontent.com/yashksaini-coder/grill/main/docs/architecture.png)
 
 1. **Ingest.** Shallow-clones each repository and scans Rust, TypeScript and JavaScript for code worth a question: `unsafe`, locks, lifetimes, spawned tasks, `useEffect`, `forEach(async ...)`, `any`, empty `catch`, and more. Each hit is framed as the whole enclosing function.
 2. **Interview.** For each spot, a local model asks one question about that exact code, listens, presses once on the weakest part of the answer, then grades the exchange 0 to 4 and says what was missed.
@@ -47,7 +52,7 @@ Recorded against `gemma4` on a laptop, no network. The first answer is senior le
 
 The order of steps is fixed in code. The model only ever does one small job at a time, so a small local model is enough.
 
-![One round: question, answer, follow-up, grade](docs/round.png)
+![One round: question, answer, follow-up, grade](https://raw.githubusercontent.com/yashksaini-coder/grill/main/docs/round.png)
 
 ## Run it
 
@@ -72,7 +77,7 @@ From source instead: `git clone https://github.com/yashksaini-coder/grill && cd 
 
 There is a Makefile too: `make setup`, then `make ingest REPOS="owner/repo"` and `make start N=3 ONLY=rust`. `make help` lists the rest.
 
-Every command, flag, and failure message is in [guide.md](guide.md).
+Every command, flag, and failure message is in [guide.md](https://github.com/yashksaini-coder/grill/blob/main/guide.md).
 
 ## Configuration
 

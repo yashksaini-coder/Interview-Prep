@@ -1,6 +1,6 @@
 {
   "name": "grill-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A mock interviewer that has read your code. Rust and TypeScript, local model, no network.",
   "keywords": [
     "interview",
@@ -21,6 +21,7 @@
     "url": "https://github.com/yashksaini-coder/grill/issues"
   },
   "author": "Yash Kumar Saini (https://github.com/yashksaini-coder)",
+  "funding": "https://github.com/sponsors/yashksaini-coder",
   "license": "MIT",
   "type": "module",
   "bin": {
