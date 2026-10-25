@@ -9,7 +9,14 @@ import { MastraBrain } from "./interview/mastra-brain.js";
 import { pick } from "./interview/pick.js";
 import { runSession } from "./interview/session.js";
 import { renderReport } from "./report.js";
-import { dropRepo, loadHotspots, loadRounds, saveHotspots, saveSession, topicStats } from "./store.js";
+import {
+  dropRepo,
+  loadHotspots,
+  loadRounds,
+  saveHotspots,
+  saveSession,
+  topicStats,
+} from "./store.js";
 import type { Hotspot, Lang } from "./types.js";
 import { terminal } from "./ui.js";
 
@@ -43,28 +50,38 @@ async function main(): Promise<void> {
 }
 
 function ingest(args: string[]): void {
-  if (args.length === 0) throw new Error("Give at least one repository: grill ingest owner/repo");
+  if (args.length === 0)
+    throw new Error("Give at least one repository: grill ingest owner/repo");
   const kept = new Map(loadHotspots().map((spot) => [spot.id, spot]));
   for (const arg of args) {
     const source = resolveSource(arg, paths.repos);
-    for (const [id, spot] of kept) if (spot.repo === source.repo) kept.delete(id);
+    for (const [id, spot] of kept)
+      if (spot.repo === source.repo) kept.delete(id);
     const found = scanRepo(source.repo, source.root);
     for (const spot of found) kept.set(spot.id, spot);
-    console.log(`${pc.bold(source.repo)}  ${found.length} spots  ${pc.dim(summary(found))}`);
+    console.log(
+      `${pc.bold(source.repo)}  ${found.length} spots  ${pc.dim(summary(found))}`,
+    );
   }
   saveHotspots([...kept.values()]);
   console.log(pc.dim(`\n${kept.size} spots saved. Run \`grill start\`.`));
 }
 
 function forget(args: string[]): void {
-  if (args.length === 0) throw new Error("Give at least one repository: grill forget owner/repo");
+  if (args.length === 0)
+    throw new Error("Give at least one repository: grill forget owner/repo");
   let kept = loadHotspots();
   for (const arg of args) {
     const rest = dropRepo(kept, arg);
     const dropped = kept.filter((s) => !rest.includes(s));
     const repo = dropped[0]?.repo;
-    if (repo) rmSync(cloneDir(repo, paths.repos), { recursive: true, force: true });
-    console.log(repo ? `${pc.bold(repo)}  ${dropped.length} spots dropped` : pc.dim(`${arg}: nothing to forget`));
+    if (repo)
+      rmSync(cloneDir(repo, paths.repos), { recursive: true, force: true });
+    console.log(
+      repo
+        ? `${pc.bold(repo)}  ${dropped.length} spots dropped`
+        : pc.dim(`${arg}: nothing to forget`),
+    );
     kept = rest;
   }
   saveHotspots(kept);
@@ -81,10 +98,14 @@ async function start(args: string[]): Promise<void> {
   });
   const lang = parseLang(values.lang);
   const count = Number.parseInt(values.n, 10);
-  if (!Number.isInteger(count) || count < 1) throw new Error("-n must be a positive number");
+  if (!Number.isInteger(count) || count < 1)
+    throw new Error("-n must be a positive number");
 
   const hotspots = loadHotspots();
-  if (hotspots.length === 0) throw new Error("Nothing to ask about yet. Run `grill ingest owner/repo` first.");
+  if (hotspots.length === 0)
+    throw new Error(
+      "Nothing to ask about yet. Run `grill ingest owner/repo` first.",
+    );
 
   const rounds = loadRounds();
   const chosen = pick(hotspots, count, {
@@ -92,7 +113,10 @@ async function start(args: string[]): Promise<void> {
     seen: new Set(rounds.map((round) => round.hotspotId)),
     stats: topicStats(rounds),
   });
-  if (chosen.length === 0) throw new Error(`No ${lang} spots found. Ingest a repository in that language.`);
+  if (chosen.length === 0)
+    throw new Error(
+      `No ${lang} spots found. Ingest a repository in that language.`,
+    );
 
   const roots = new Map(hotspots.map((spot) => [spot.repo, spot.root]));
   const brain = new MastraBrain(model, values.tools ? { roots } : {});
@@ -119,7 +143,8 @@ function spots(): void {
 
 function summary(found: Hotspot[]): string {
   const counts = new Map<string, number>();
-  for (const spot of found) counts.set(spot.topic, (counts.get(spot.topic) ?? 0) + 1);
+  for (const spot of found)
+    counts.set(spot.topic, (counts.get(spot.topic) ?? 0) + 1);
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1])
     .map(([topic, count]) => `${topic} ${count}`)
@@ -135,9 +160,14 @@ function parseLang(value: string | undefined): Lang | undefined {
 
 /** A dead local server is the one failure everyone hits. Say what to do. */
 function explain(error: unknown): Error {
-  const text = error instanceof Error ? `${error.message} ${String(error.cause ?? "")}` : String(error);
+  const text =
+    error instanceof Error
+      ? `${error.message} ${String(error.cause ?? "")}`
+      : String(error);
   if (/model '.*' not found/i.test(text)) {
-    return new Error(`Model ${model.modelId} is not installed. Run \`ollama pull ${model.modelId}\`, or set GRILL_MODEL.`);
+    return new Error(
+      `Model ${model.modelId} is not installed. Run \`ollama pull ${model.modelId}\`, or set GRILL_MODEL.`,
+    );
   }
   if (/ECONNREFUSED|fetch failed|Cannot connect/i.test(text)) {
     return new Error(
